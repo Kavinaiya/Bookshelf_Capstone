@@ -1,88 +1,99 @@
-// Import required modules
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 const cors = require('cors');
 require('dotenv').config();
 
-// Initialize express app
+// Initialize the Express application
 const app = express();
 
 // Middleware
-app.use(express.json()); // For parsing application/json
-app.use(cors()); // Enable Cross-Origin Request Sharing (CORS)
+app.use(express.json()); // Parse JSON bodies
+app.use(cors()); // Enable Cross-Origin Resource Sharing
 
-// Set the port (Heroku uses a dynamic port)
-const PORT = process.env.PORT || 5000;
-
-// MongoDB Connection
+// MongoDB connection
 const mongoURI = process.env.MONGODB_URI;
 
-mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
   .then(() => console.log('MongoDB connected successfully'))
   .catch((err) => console.error('MongoDB Connection Error:', err));
 
-// Example Schema (can be expanded)
-const Book = mongoose.model('Book', new mongoose.Schema({
+// Define a simple schema and model for testing (books collection)
+const bookSchema = new mongoose.Schema({
   title: { type: String, required: true },
   author: { type: String, required: true },
-  rating: { type: Number },
-  review: { type: String }
-}));
+  rating: { type: Number, default: 0 },
+  review: { type: String, default: '' },
+});
 
-// Example API Routes
-// GET: Get all books
+const Book = mongoose.model('Book', bookSchema);
+
+// API Routes
+
+// GET: Fetch all books
 app.get('/api/books', async (req, res) => {
   try {
     const books = await Book.find();
     res.json(books);
   } catch (err) {
-    res.status(500).send('Server Error');
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 
 // POST: Add a new book
 app.post('/api/books', async (req, res) => {
+  const { title, author, rating, review } = req.body;
+
   try {
-    const { title, author, rating, review } = req.body;
     const newBook = new Book({ title, author, rating, review });
     await newBook.save();
     res.status(201).json(newBook);
   } catch (err) {
-    res.status(400).send('Bad Request');
+    res.status(400).json({ message: 'Error adding book', error: err.message });
   }
 });
 
-// PUT: Update a book's details (for review or rating update)
+// PUT: Update a book by ID
 app.put('/api/books/:id', async (req, res) => {
+  const { id } = req.params;
+  const { title, author, rating, review } = req.body;
+
   try {
-    const book = await Book.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(book);
+    const updatedBook = await Book.findByIdAndUpdate(
+      id,
+      { title, author, rating, review },
+      { new: true }
+    );
+    res.json(updatedBook);
   } catch (err) {
-    res.status(400).send('Error updating book');
+    res.status(400).json({ message: 'Error updating book', error: err.message });
   }
 });
 
-// DELETE: Delete a book
+// DELETE: Remove a book by ID
 app.delete('/api/books/:id', async (req, res) => {
+  const { id } = req.params;
+
   try {
-    await Book.findByIdAndDelete(req.params.id);
+    await Book.findByIdAndDelete(id);
     res.json({ message: 'Book deleted successfully' });
   } catch (err) {
-    res.status(400).send('Error deleting book');
+    res.status(400).json({ message: 'Error deleting book', error: err.message });
   }
 });
 
-// Serve static files from the React app (built frontend)
+// Serve static files from the React build folder
 const frontendPath = path.join(__dirname, 'frontend', 'build');
 app.use(express.static(frontendPath));
 
-// Fallback route to serve the React index.html for client-side routing
+// Fallback for React Router: Serve index.html for all other routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
 // Start the server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
