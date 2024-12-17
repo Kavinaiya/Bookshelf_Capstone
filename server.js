@@ -1,99 +1,67 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const path = require('path');
-const cors = require('cors');
-require('dotenv').config();
+const express = require('express');       // Import Express.js
+const mongoose = require('mongoose');     // Import Mongoose for MongoDB
+const cors = require('cors');             // Import CORS for cross-origin requests
+const Book = require('./models/Book');    // Import the Book model
+require('dotenv').config();               // Load environment variables from .env file
 
-// Initialize the Express application
 const app = express();
+app.use(express.json());  // Middleware to parse incoming JSON data
+app.use(cors());          // Enable CORS for frontend communication
 
-// Middleware
-app.use(express.json()); // Parse JSON bodies
-app.use(cors()); // Enable Cross-Origin Resource Sharing
+// --- MongoDB Connection ---
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
-// MongoDB connection
-const mongoURI = process.env.MONGODB_URI;
+// --- API Endpoints ---
 
-mongoose.connect(mongoURI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-  .then(() => console.log('MongoDB connected successfully'))
-  .catch((err) => console.error('MongoDB Connection Error:', err));
-
-// Define a simple schema and model for testing (books collection)
-const bookSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  author: { type: String, required: true },
-  rating: { type: Number, default: 0 },
-  review: { type: String, default: '' },
+// Add a new book
+app.post('/api/books', async (req, res) => {
+  try {
+    const { title, author, status } = req.body;   // Extract book details from the request body
+    const newBook = new Book({ title, author, status });  // Create a new Book document
+    await newBook.save();                         // Save to MongoDB
+    res.status(201).json(newBook);                // Send back the created book
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-const Book = mongoose.model('Book', bookSchema);
-
-// API Routes
-
-// GET: Fetch all books
+// Get all books
 app.get('/api/books', async (req, res) => {
   try {
-    const books = await Book.find();
+    const books = await Book.find();  // Fetch all books from MongoDB
+    res.json(books);                  // Send back the books as a response
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get currently reading books
+app.get('/api/books/currently-reading', async (req, res) => {
+  try {
+    const books = await Book.find({ status: 'currently reading' }); // Find books with the 'currently reading' status
     res.json(books);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
-// POST: Add a new book
-app.post('/api/books', async (req, res) => {
-  const { title, author, rating, review } = req.body;
-
+// Get completed books
+app.get('/api/books/completed', async (req, res) => {
   try {
-    const newBook = new Book({ title, author, rating, review });
-    await newBook.save();
-    res.status(201).json(newBook);
-  } catch (err) {
-    res.status(400).json({ message: 'Error adding book', error: err.message });
+    const books = await Book.find({ status: 'completed' }); // Find books with 'completed' status
+    res.json(books);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
-// PUT: Update a book by ID
-app.put('/api/books/:id', async (req, res) => {
-  const { id } = req.params;
-  const { title, author, rating, review } = req.body;
-
-  try {
-    const updatedBook = await Book.findByIdAndUpdate(
-      id,
-      { title, author, rating, review },
-      { new: true }
-    );
-    res.json(updatedBook);
-  } catch (err) {
-    res.status(400).json({ message: 'Error updating book', error: err.message });
-  }
+// Default route for health check
+app.get('/', (req, res) => {
+  res.send('Bookshelf API is running...');
 });
 
-// DELETE: Remove a book by ID
-app.delete('/api/books/:id', async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    await Book.findByIdAndDelete(id);
-    res.json({ message: 'Book deleted successfully' });
-  } catch (err) {
-    res.status(400).json({ message: 'Error deleting book', error: err.message });
-  }
-});
-
-// Serve static files from the React build folder
-const frontendPath = path.join(__dirname, 'frontend', 'build');
-app.use(express.static(frontendPath));
-
-// Fallback for React Router: Serve index.html for all other routes
-app.get('*', (req, res) => {
-  res.sendFile(path.join(frontendPath, 'index.html'));
-});
-
-// Start the server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+// --- Start the Server ---
+const PORT = process.env.PORT || 5000;  // Define the port
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
