@@ -2,7 +2,7 @@
 const express = require('express');       // Import Express.js
 const mongoose = require('mongoose');     // Import Mongoose for MongoDB
 const cors = require('cors');             // Import CORS for cross-origin requests
-const Book = require('./backend/models/book');   // Import the Book model
+const Book = require('./backend/models/Book');   // Import the Book model
 require('dotenv').config();               // Load environment variables from .env file
 
 // Debug log for MongoDB URI
