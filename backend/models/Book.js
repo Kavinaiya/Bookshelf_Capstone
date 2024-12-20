@@ -1,12 +1,11 @@
 const mongoose = require('mongoose');
 
-// Define the Book schema
 const bookSchema = new mongoose.Schema({
-  title: String,
-  author: String,
-  // Other fields...
+  title: { type: String, required: true },
+  author: { type: String, required: true },
+  status: { type: String, enum: ['currently reading', 'to read', 'completed'], default: 'to read' },
+  addedAt: { type: Date, default: Date.now }
 });
 
-// Create and export the Book model
 const Book = mongoose.model('Book', bookSchema);
 module.exports = Book;
