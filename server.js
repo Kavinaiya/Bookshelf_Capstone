@@ -1,16 +1,28 @@
+// Import necessary modules
 const express = require('express');       // Import Express.js
 const mongoose = require('mongoose');     // Import Mongoose for MongoDB
 const cors = require('cors');             // Import CORS for cross-origin requests
 const Book = require('./backend/models/book');   // Import the Book model
 require('dotenv').config();               // Load environment variables from .env file
 
+// Debug log for MongoDB URI
+console.log('MongoDB URI:', process.env.MONGODB_URI);
+
+// Create an Express application
 const app = express();
-app.use(express.json());  // Middleware to parse incoming JSON data
-app.use(cors());          // Enable CORS for frontend communication
+
+// Middleware to parse incoming JSON data
+app.use(express.json());
+
+// Enable CORS for frontend communication
+app.use(cors());
+
+// Suppress Mongoose strictQuery deprecation warning
+mongoose.set('strictQuery', false);
 
 // --- MongoDB Connection ---
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('MongoDB connected'))
+  .then(() => console.log('MongoDB connected successfully'))
   .catch(err => console.error('MongoDB connection error:', err));
 
 // --- API Endpoints ---
