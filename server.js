@@ -4,9 +4,7 @@ const mongoose = require('mongoose');    // Import Mongoose for MongoDB
 const cors = require('cors');             // Import CORS for cross-origin requests
 const Book = require('./backend/models/Book');   // Import the Book model
 require('dotenv').config();              // Load environment variables from .env file
-
-// Debug log for MongoDB URI
-console.log('MongoDB URI:', process.env.MONGODB_URI);
+const path = require('path');
 
 // Create an Express application
 const app = express();
@@ -19,6 +17,17 @@ app.use(cors());
 
 // Suppress Mongoose strictQuery deprecation warning
 mongoose.set('strictQuery', false);
+
+// Debug log for MongoDB URI
+console.log('MongoDB URI:', process.env.MONGO_URI);
+
+// Serve static files from React build
+app.use(express.static(path.join(__dirname, 'frontend/build')));
+
+// Fallback for React's routing
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend/build', 'index.html'));
+});
 
 // --- MongoDB Connection ---
 const uri = process.env.MONGO_URI;
