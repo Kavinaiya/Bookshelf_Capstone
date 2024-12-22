@@ -3,10 +3,10 @@ const express = require('express');       // Import Express.js
 const mongoose = require('mongoose');    // Import Mongoose for MongoDB
 const cors = require('cors');             // Import CORS for cross-origin requests
 const Book = require('./backend/models/Book');   // Import the Book model
+const userRoutes = require('./backend/routes/UserRoutes'); // Import the user routes
 require('dotenv').config();              // Load environment variables from .env file
 const path = require('path');
 
-// Create an Express application
 const app = express();
 
 // Middleware to parse incoming JSON data
@@ -37,6 +37,7 @@ mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
 
 // --- API Endpoints ---
 
+// Book Routes
 // Add a new book
 app.post('/api/books', async (req, res) => {
   try {
@@ -78,6 +79,9 @@ app.get('/api/books/completed', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// User Routes (Authentication)
+app.use('/api/users', userRoutes); // Register the user routes for /register, /login, /currently-reading
 
 // Default route for health check
 app.get('/', (req, res) => {
